@@ -20,32 +20,10 @@ from imitation.algorithms.adversarial.tcl import TCL
 import hydra
 from hydra.utils import get_original_cwd, to_absolute_path
 from omegaconf import DictConfig, OmegaConf
-from util import visualize_reward, save, visualize_reward_gt, visualize_reward_twodconst, visualize_reward_twod_gt
+from util import save
 
 from torch.nn import functional as F
 from imitation.rewards import reward_nets
-
-class SigmoidRewardNet(reward_nets.RewardNet):
-    def __init__(self, base: reward_nets.RewardNet):
-        """Builds LogSigmoidRewardNet to wrap `reward_net`."""
-        # TODO(adam): make an explicit RewardNetWrapper class?
-        super().__init__(
-            observation_space=base.observation_space,
-            action_space=base.action_space,
-            normalize_images=base.normalize_images,
-        )
-        self.base = base
-        self.scaler = th.nn.Parameter(th.tensor(0.0, requires_grad=True),requires_grad=True)
-
-    def forward(
-        self,
-        state: th.Tensor,
-        action: th.Tensor,
-        next_state: th.Tensor,
-        done: th.Tensor,
-    ) -> th.Tensor:
-        logits = self.base.forward(state, action, next_state, done)
-        return F.sigmoid(logits) * self.scaler * 1000
     
 def load_rollouts(dir):
     with open(dir, 'rb') as f:
@@ -149,7 +127,6 @@ def main(cfg: DictConfig):
     )
     constraint_net = BasicShapedRewardNet(
         venv.observation_space, venv.action_space, normalize_input_layer=normalize_layer[normalize],#RunningNorm,
-        # hid_sizes=[hid_size, hid_size],
         reward_hid_sizes=[32,32],
         potential_hid_sizes=[64,64],
         use_state=True,
@@ -196,7 +173,7 @@ def main(cfg: DictConfig):
     )
 
     eval_env = DummyVecEnv([lambda: gym.make(env_id)] * 1)
-    test_env = gym.make("TwoDConstraintReal-v1")
+    test_env = gym.make("WallFollowing-v1")
     if render:
         eval_env.render(mode='human')
     
@@ -246,24 +223,6 @@ def main(cfg: DictConfig):
                     time.sleep(0.005)
             consts = constraint_fn(observations, actions, next_observations, dones)
 
-            visualize_reward_twodconst(tcl_trainer.gen_algo, lambda *args: -1*tcl_trainer._running_norm( 1.0 * tcl_trainer.constraint_test(*args) ),
-                                    state=states_m,
-                                  size=(cnt_x,cnt_y),
-                                  log_dir=log_dir,
-                                  round_num=int(round_num), 
-                                  tag="constraint", 
-                                  level=-1,
-                                  use_wandb=is_wandb, 
-                                  goal='mid')
-
-            visualize_reward_twodconst(tcl_trainer.gen_algo, lambda *args: tcl_trainer._running_norm( 1.0 * tcl_trainer.custom_test(*args)) ,
-                                    state=states_m,
-                                  size=(cnt_x,cnt_y),
-                                  log_dir=log_dir,
-                                  round_num=int(round_num), 
-                                  tag="custom", 
-                                  use_wandb=is_wandb, 
-                                  goal='mid')
 
     tcl_trainer.train(int(total_steps), callback=cb)  
     
