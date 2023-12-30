@@ -1,0 +1,38 @@
+comment: None
+total_steps: 1e6
+n_envs: 16
+render: False
+device: "cuda"
+is_wandb: False
+project: ${env.env_id}_irdd
+allow_variable_horizon: False 
+
+env:
+  r_gamma: 0.99
+  test_end_id: ${env.env_id}
+
+disc:
+  demo_batch_size: 1600
+  gen_replay_buffer_capacity: 3200
+  n_disc_updates_per_round: 20
+  lr: 3e-4
+  hid_size: 32
+  normalize: None
+  reward_net_opt: AdamW
+  primary_net_opt: AdamW
+  constraint_net_opt: AdamW
+  coef: [1.0, 1.0, 0.0]
+  reg_coef: [0.1, 0.1, 0.1]
+  clip_range: 0.2
+gen:
+  model: PPO2
+  lr: 3e-4
+  batch_size: 64
+  target_kl: 0.1
+  n_epochs: 30
+  ent_coef: 1e-4
+  # n_steps: ${disc.gen_replay_buffer_capacity//n_envs}
+  n_steps: 100
+
+defaults:
+  - env: serving

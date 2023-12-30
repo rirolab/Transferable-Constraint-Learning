@@ -1,0 +1,32 @@
+# @package _global_
+comment: None
+total_steps: 5e5
+n_envs: 16
+render: False
+device: "cuda"
+is_wandb: True
+project: ${env.env_id}_real
+
+env:
+  env_id: "WallFollowing-v0"
+  r_gamma: 0.99
+
+disc:
+  demo_batch_size: 256 
+  gen_replay_buffer_capacity: 1e5
+  n_disc_updates_per_round: 8
+  lr: 3e-4
+  hid_size: 32
+  normalize: 'RunningNorm'
+  coef: [1.0, 1.0, 0.0]
+  reg_coef: [5.0, 0.1, 0.1]
+  # reg_coef: [5.0, 0.3, 0.15]
+gen:
+  model: PPO2
+  lr: 3e-4
+  batch_size: 64 
+  target_kl: 0.1
+  n_epochs: 40
+  ent_coef: 1e-2
+  # n_steps: ${disc.gen_replay_buffer_capacity//n_envs}
+  n_steps: 60
