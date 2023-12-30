@@ -249,7 +249,7 @@ class TCL(base.DemonstrationAlgorithm[types.Transitions]):
                 "Non-None `log_policy_act_prob` is required for this method.",
             )
         const_output_train = self._primary_net(state, action, next_state, done)
-        return const_output_train 
+        return const_output_train  -  primary_log_policy_act_prob
 
     @property
     def reward_train(self) -> reward_nets.RewardNet:
